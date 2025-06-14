@@ -1,4 +1,5 @@
 import pygame
+import time
 pygame.init()
 
 back = (200, 255, 255) #cor do fundo
@@ -33,6 +34,13 @@ class Picture(Area):
     def draw(self): #desenhar o objeto em determinado ponto do ecrã
         mw.blit(self.image, (self.rect.x, self.rect.y))
 
+class Label(Area):
+    def set_text(self, text, fsize = 12, text_color =(0,0,0)):
+        self.image = pygame.font.SysFont('verdana', fsize).render(text, True, text_color)
+
+    def draw(self, shift_x = 0, shift_y = 0):
+        self.fill()
+        mw.blit(self.image, (self.rect.x + shift_x, self.rect.y + shift_y))
 
 racket_x = 200
 racket_y = 300
@@ -59,6 +67,11 @@ for j in range(3): #j é o número de linhas
         x = x + 55 #adicionar a distância entre os monstros
     count -= 1
 
+move_right = False
+move_left = False
+dx = 3 #deslocamento em x
+dy = 3 #deslocamento em y
+
 while not game_over:
     ball.fill()
     platform.fill()
@@ -69,18 +82,63 @@ while not game_over:
     
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_RIGHT:
-                pass
+                move_right = True
             if event.key == pygame.K_LEFT:
-                pass
-            if event.key == pygame.K_ESC:
+                move_left = True
+            if event.key == pygame.K_ESCAPE:
                 game_over = True
         elif event.type == pygame.KEYUP:
             if event.key == pygame.K_RIGHT:
-                pass
+                move_right = False
             if event.key == pygame.K_LEFT:
-                pass
+                move_left = False
+    
+    if move_right:
+        platform.rect.x += 3
+    if move_left:
+        platform.rect.x -= 3
+    
+    #movimento constante com aceleração da bola em x e y
+    ball.rect.x += dx
+    ball.rect.y += dy
+    
+    #colisões
+    # se a bola tocar os limites da janela, muda de direção
+    #<>
+    if ball.rect.y < 0:
+        dy *= -1
+    
+    if ball.rect.x > 450 or ball.rect.x < 0:
+        dx *= -1
+    
+    # if a bola tocar a plataforma, muda de direção...
+    if ball.rect.colliderect(platform.rect):
+        dy *= -1
+    
+    if platform.rect.x > 450:
+        move_right = False
+    
+    #condição de vitória
+    if len(monsters) == 23:
+        time_text = Label(150,150, 50, 50)  #label está presente no nosso projeto anterior FastClicker
+        time_text.set_text('YOU WIN!', 60, (0,200,0)) 
+        time_text.draw(10,10)
+        game_over = True
+    
+    #condição de derrota
+    if ball.rect.y > 350:
+        time_text = Label(150,150, 50, 50)
+        time_text.set_text('YOU LOSE!', 60, (0,200,0))
+        time_text.draw(10,10)
+        game_over = True
+
     for m in monsters:
         m.draw()
+        #se a bola tocar um monstro, o monstro é removido da lista e modificamos a direção da bola
+        if m.rect.colliderect(ball.rect):
+            monsters.remove(m) #remove da lista
+            m.fill() #faz o monstro desaparecer
+            dy *= -1 #muda a direção da bola
     
     platform.draw()
     ball.draw()
